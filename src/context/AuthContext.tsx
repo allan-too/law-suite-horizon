@@ -47,13 +47,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkAuth();
   }, []);
 
-  // Mock login function - replace with actual API call in production
+  // Login function with support for demo accounts
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Demo user login
+      if (email === 'demo@legalcrm.com' && password === 'demo123') {
+        const demoUser: User = {
+          id: 'demo-user-123',
+          email: 'demo@legalcrm.com',
+          name: 'Demo User',
+          role: 'user',
+          subscriptionType: 'professional',
+        };
+        
+        setUser(demoUser);
+        localStorage.setItem('auth_token', 'demo-user-token');
+        localStorage.setItem('user', JSON.stringify(demoUser));
+        return;
+      }
+      
+      // Demo admin login
+      if (email === 'admin@legalcrm.com' && password === 'admin123') {
+        const adminUser: User = {
+          id: 'demo-admin-456',
+          email: 'admin@legalcrm.com',
+          name: 'Demo Admin',
+          role: 'admin',
+          subscriptionType: 'enterprise',
+        };
+        
+        setUser(adminUser);
+        localStorage.setItem('auth_token', 'demo-admin-token');
+        localStorage.setItem('user', JSON.stringify(adminUser));
+        return;
+      }
+      
+      // Regular login (same as before)
       if (email && password) {
         // Mock user for demo purposes
         const mockUser: User = {

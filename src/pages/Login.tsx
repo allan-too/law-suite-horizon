@@ -32,6 +32,23 @@ const Login = () => {
     }
   };
 
+  const handleDemoLogin = async (role: 'user' | 'admin') => {
+    setError(null);
+    
+    try {
+      if (role === 'user') {
+        await login('demo@legalcrm.com', 'demo123');
+      } else {
+        await login('admin@legalcrm.com', 'admin123');
+      }
+      toast.success(`Demo login successful as ${role}!`);
+      navigate('/dashboard');
+    } catch (err) {
+      setError('Demo login failed. Please try again.');
+      console.error('Demo login error:', err);
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="w-full max-w-md space-y-8">
@@ -92,6 +109,38 @@ const Login = () => {
                 {isLoading ? 'Signing in...' : 'Sign in'}
               </Button>
             </form>
+
+            {/* Demo Login Section */}
+            <div className="mt-6 space-y-4">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Demo Access</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Button 
+                  onClick={() => handleDemoLogin('user')} 
+                  variant="outline" 
+                  className="w-full" 
+                  type="button"
+                  disabled={isLoading}
+                >
+                  Demo User
+                </Button>
+                <Button 
+                  onClick={() => handleDemoLogin('admin')} 
+                  variant="outline" 
+                  className="w-full" 
+                  type="button"
+                  disabled={isLoading}
+                >
+                  Demo Admin
+                </Button>
+              </div>
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <div className="relative w-full">
