@@ -17,10 +17,23 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
+import Checkout from "./pages/dashboard/Checkout";
 
 // Dashboard Pages
 import UserDashboard from "./pages/dashboard/UserDashboard";
+import Clients from "./pages/dashboard/Clients";
+import IntakeForms from "./pages/dashboard/IntakeForms";
+import Documents from "./pages/dashboard/Documents";
+import Contracts from "./pages/dashboard/Contracts";
+import Billing from "./pages/dashboard/Billing";
+import Settings from "./pages/dashboard/Settings";
+
+// Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
+import AdminLogs from "./pages/admin/AdminLogs";
+import AdminPlatform from "./pages/admin/AdminPlatform";
 
 const queryClient = new QueryClient();
 
@@ -106,21 +119,31 @@ const App = () => (
                   </div>
                 }
               />
+              <Route
+                path="/checkout"
+                element={
+                  <Checkout />
+                }
+              />
 
               {/* User Protected Routes without Navbar/Footer (uses DashboardLayout) */}
               <Route path="/dashboard" element={<ProtectedRoute requiredRole="user" />}>
                 <Route index element={<UserDashboard />} />
-                {/* Add additional user dashboard routes here */}
-                {/* <Route path="clients" element={<Clients />} /> */}
-                {/* <Route path="documents" element={<Documents />} /> */}
+                <Route path="clients" element={<Clients />} />
+                <Route path="intake-forms" element={<IntakeForms />} />
+                <Route path="documents" element={<Documents />} />
+                <Route path="contracts" element={<Contracts />} />
+                <Route path="billing" element={<Billing />} />
+                <Route path="settings" element={<Settings />} />
               </Route>
 
               {/* Admin Protected Routes without Navbar/Footer (uses DashboardLayout) */}
               <Route path="/admin" element={<ProtectedRoute requiredRole="admin" />}>
                 <Route path="dashboard" element={<AdminDashboard />} />
-                {/* Add additional admin dashboard routes here */}
-                {/* <Route path="users" element={<AllUsers />} /> */}
-                {/* <Route path="subscriptions" element={<AllSubscriptions />} /> */}
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="subscriptions" element={<AdminSubscriptions />} />
+                <Route path="logs" element={<AdminLogs />} />
+                <Route path="platform" element={<AdminPlatform />} />
               </Route>
 
               {/* Catch-all route */}
