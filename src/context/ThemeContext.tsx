@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React from 'react';
 
 type Theme = 'dark' | 'light';
 
@@ -8,10 +8,13 @@ interface ThemeContextType {
   toggleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const ThemeContext = React.createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [theme, setTheme] = React.useState<Theme>(() => {
+    // For SSR / initial render before we have window access
+    if (typeof window === 'undefined') return 'light';
+    
     // Check localStorage first, then system preference
     const savedTheme = localStorage.getItem('theme') as Theme;
     if (savedTheme) {
@@ -20,7 +23,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     // Update localStorage when theme changes
     localStorage.setItem('theme', theme);
     
@@ -44,7 +47,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const useTheme = (): ThemeContextType => {
-  const context = useContext(ThemeContext);
+  const context = React.useContext(ThemeContext);
   if (context === undefined) {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
