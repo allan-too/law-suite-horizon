@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -10,16 +10,28 @@ const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   
   const isActive = (path: string) => location.pathname === path;
 
+  // Handle dashboard link based on user role
+  const getDashboardLink = () => {
+    if (!user) return '/dashboard';
+    return user.role === 'admin' ? '/admin/dashboard' : '/dashboard';
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Pricing', path: '/pricing' },
     ...(isAuthenticated 
-      ? [{ name: 'Dashboard', path: '/dashboard' }] 
+      ? [{ name: 'Dashboard', path: getDashboardLink() }] 
       : []
     )
   ];
@@ -53,7 +65,7 @@ const Navbar = () => {
           {isAuthenticated ? (
             <div className="flex items-center space-x-4">
               <span className="text-sm font-medium">Hi, {user?.name}</span>
-              <Button onClick={logout} variant="outline" size="sm">
+              <Button onClick={handleLogout} variant="outline" size="sm">
                 Logout
               </Button>
             </div>
@@ -104,7 +116,7 @@ const Navbar = () => {
           {isAuthenticated ? (
             <>
               <div className="px-4 py-2 font-medium">Hi, {user?.name}</div>
-              <Button onClick={() => { logout(); setIsMenuOpen(false); }} variant="outline" className="w-full">
+              <Button onClick={() => { handleLogout(); setIsMenuOpen(false); }} variant="outline" className="w-full">
                 Logout
               </Button>
             </>
