@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -9,12 +9,44 @@ import {
   CreditCard,
   Settings,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { IntakeFormForm } from '@/components/forms/IntakeFormForm';
+import { IntakeFormCard } from '@/components/cards/IntakeFormCard';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
+interface FormField {
+  id: string;
+  type: 'text' | 'select' | 'date' | 'checkbox' | 'textarea';
+  label: string;
+  required: boolean;
+  options?: string[];
+}
+
+interface IntakeForm {
+  id: string;
+  title: string;
+  description?: string;
+  fields: FormField[];
+  status: 'Active' | 'Archived';
+  createdAt: string;
+}
 
 const IntakeForms: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingForm, setEditingForm] = useState<IntakeForm | undefined>();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [formToDelete, setFormToDelete] = useState<string | null>(null);
 
   // Navigation items for the sidebar
   const sidebarItems = [
@@ -62,14 +94,115 @@ const IntakeForms: React.FC = () => {
     },
   ];
 
-  // Mock forms data
-  const mockForms = [
-    { id: 1, name: 'General Client Intake', responses: 12, lastUpdated: '2023-05-12', status: 'active' },
-    { id: 2, name: 'Corporate Client Intake', responses: 5, lastUpdated: '2023-05-08', status: 'active' },
-    { id: 3, name: 'Family Law Questionnaire', responses: 8, lastUpdated: '2023-04-25', status: 'active' },
-    { id: 4, name: 'Personal Injury Intake', responses: 3, lastUpdated: '2023-05-01', status: 'draft' },
-    { id: 5, name: 'Estate Planning Questionnaire', responses: 7, lastUpdated: '2023-04-18', status: 'active' },
-  ];
+  // Mock intake forms data - in production, this would come from an API
+  const [intakeForms, setIntakeForms] = useState<IntakeForm[]>([
+    {
+      id: '1',
+      title: 'General Client Intake',
+      description: 'Standard intake form for new clients seeking legal services',
+      fields: [
+        { id: '1', type: 'text', label: 'Full Name', required: true },
+        { id: '2', type: 'text', label: 'Email Address', required: true },
+        { id: '3', type: 'text', label: 'Phone Number', required: true },
+        { id: '4', type: 'textarea', label: 'Legal Issue Description', required: true },
+        { id: '5', type: 'select', label: 'Jurisdiction', required: true, options: ['United States', 'Canada', 'United Kingdom'] },
+      ],
+      status: 'Active',
+      createdAt: '2023-05-12T10:00:00Z',
+    },
+    {
+      id: '2',
+      title: 'Corporate Client Intake',
+      description: 'Specialized form for corporate and business clients',
+      fields: [
+        { id: '1', type: 'text', label: 'Company Name', required: true },
+        { id: '2', type: 'text', label: 'Contact Person', required: true },
+        { id: '3', type: 'text', label: 'Business Email', required: true },
+        { id: '4', type: 'select', label: 'Company Size', required: false, options: ['1-10', '11-50', '51-200', '200+'] },
+        { id: '5', type: 'textarea', label: 'Legal Matter', required: true },
+      ],
+      status: 'Active',
+      createdAt: '2023-05-08T14:30:00Z',
+    },
+    {
+      id: '3',
+      title: 'Family Law Questionnaire',
+      description: 'Comprehensive form for family law matters',
+      fields: [
+        { id: '1', type: 'text', label: 'Full Name', required: true },
+        { id: '2', type: 'date', label: 'Date of Birth', required: true },
+        { id: '3', type: 'select', label: 'Marital Status', required: true, options: ['Single', 'Married', 'Divorced', 'Widowed'] },
+        { id: '4', type: 'checkbox', label: 'Children Involved', required: false },
+        { id: '5', type: 'textarea', label: 'Case Details', required: true },
+      ],
+      status: 'Active',
+      createdAt: '2023-04-25T09:15:00Z',
+    },
+    {
+      id: '4',
+      title: 'Personal Injury Intake',
+      description: 'Form for personal injury and accident cases',
+      fields: [
+        { id: '1', type: 'text', label: 'Full Name', required: true },
+        { id: '2', type: 'date', label: 'Incident Date', required: true },
+        { id: '3', type: 'textarea', label: 'Incident Description', required: true },
+      ],
+      status: 'Archived',
+      createdAt: '2023-05-01T16:45:00Z',
+    },
+  ]);
+
+  const handleAddForm = () => {
+    setEditingForm(undefined);
+    setIsFormOpen(true);
+  };
+
+  const handleEditForm = (form: IntakeForm) => {
+    setEditingForm(form);
+    setIsFormOpen(true);
+  };
+
+  const handleDeleteForm = (formId: string) => {
+    setFormToDelete(formId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (formToDelete) {
+      // In production, make API call to delete form
+      // await fetch(`/api/forms/${formToDelete}`, { method: 'DELETE' });
+      setIntakeForms(prev => prev.filter(form => form.id !== formToDelete));
+      setFormToDelete(null);
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleSubmitForm = (formData: IntakeForm) => {
+    if (editingForm) {
+      // Update existing form
+      setIntakeForms(prev => prev.map(form => 
+        form.id === editingForm.id ? { ...formData, id: editingForm.id } : form
+      ));
+    } else {
+      // Add new form
+      const newForm = {
+        ...formData,
+        id: Date.now().toString(), // In production, this would be generated by the backend
+        createdAt: new Date().toISOString(),
+      };
+      setIntakeForms(prev => [...prev, newForm]);
+    }
+  };
+
+  const getStatusCounts = () => {
+    return {
+      active: intakeForms.filter(f => f.status === 'Active').length,
+      archived: intakeForms.filter(f => f.status === 'Archived').length,
+      total: intakeForms.length,
+    };
+  };
+
+  const statusCounts = getStatusCounts();
 
   return (
     <DashboardLayout 
@@ -78,55 +211,84 @@ const IntakeForms: React.FC = () => {
     >
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">Intake Forms</h2>
-          <button 
-            onClick={() => navigate('/dashboard/intake-forms/new')}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
-            Create New Form
-          </button>
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Intake Forms</h2>
+            <p className="text-muted-foreground mt-1">
+              Create and manage client intake form templates
+            </p>
+          </div>
+          <Button onClick={handleAddForm}>
+            Add Intake Form
+          </Button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-2xl font-bold">{statusCounts.active}</div>
+              <p className="text-xs text-muted-foreground">
+                Active Forms
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-2xl font-bold">{statusCounts.archived}</div>
+              <p className="text-xs text-muted-foreground">
+                Archived Forms
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-2xl font-bold">{statusCounts.total}</div>
+              <p className="text-xs text-muted-foreground">
+                Total Forms
+              </p>
+            </CardContent>
+          </Card>
         </div>
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {mockForms.map((form) => (
-            <Card key={form.id} className="overflow-hidden">
-              <CardHeader className="bg-muted/50 pb-2">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{form.name}</CardTitle>
-                  <Badge 
-                    variant={form.status === 'active' ? 'outline' : 'secondary'}
-                  >
-                    {form.status === 'active' ? 'Active' : 'Draft'}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-medium">{form.responses}</span> responses
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Last updated: {new Date(form.lastUpdated).toLocaleDateString()}
-                  </p>
-                  <div className="flex justify-between pt-2">
-                    <button 
-                      onClick={() => navigate(`/dashboard/intake-forms/${form.id}`)}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      View Responses
-                    </button>
-                    <button 
-                      onClick={() => navigate(`/dashboard/intake-forms/${form.id}/edit`)}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Edit Form
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {intakeForms.map((form) => (
+            <IntakeFormCard
+              key={form.id}
+              form={form}
+              onEdit={handleEditForm}
+              onDelete={handleDeleteForm}
+            />
           ))}
         </div>
+
+        {intakeForms.length === 0 && (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">No intake forms yet. Create your first form template to get started.</p>
+            </CardContent>
+          </Card>
+        )}
+        
+        <IntakeFormForm
+          open={isFormOpen}
+          onOpenChange={setIsFormOpen}
+          form={editingForm}
+          onSubmit={handleSubmitForm}
+        />
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Intake Form</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this intake form? This action cannot be undone and will also remove any associated form submissions.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
