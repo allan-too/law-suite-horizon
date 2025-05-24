@@ -1,23 +1,52 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
   FileText,
   CreditCard,
   Settings,
-  CheckCircle,
-  AlertCircle,
-  XCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ContractForm } from '@/components/forms/ContractForm';
+import { ContractCard } from '@/components/cards/ContractCard';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
+interface Client {
+  id: string;
+  name: string;
+}
+
+interface Contract {
+  id: string;
+  title: string;
+  clientId: string;
+  clientName: string;
+  jurisdiction: string;
+  status: 'Draft' | 'Signed' | 'Flagged';
+  description: string;
+  fileName?: string;
+  uploadedDate: string;
+}
 
 const Contracts: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingContract, setEditingContract] = useState<Contract | undefined>();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [contractToDelete, setContractToDelete] = useState<string | null>(null);
 
   // Navigation items for the sidebar
   const sidebarItems = [
@@ -65,98 +94,125 @@ const Contracts: React.FC = () => {
     },
   ];
 
-  // Mock contracts data
-  const mockContracts = [
-    { 
-      id: 1, 
-      name: 'Service Agreement - Smith', 
-      client: 'John Smith',
-      status: 'good', 
-      lastUpdated: '2023-05-12',
-      issues: 0,
-      warnings: 0,
-      value: '$5,000',
-      dueDate: '2023-06-30',
-    },
-    { 
-      id: 2, 
-      name: 'Retainer - Johnson LLC', 
-      client: 'Lisa Johnson',
-      status: 'warning', 
-      lastUpdated: '2023-05-10',
-      issues: 0,
-      warnings: 2,
-      value: '$10,000',
-      dueDate: '2023-06-15',
-    },
-    { 
-      id: 3, 
-      name: 'NDA - Tech Solutions', 
-      client: 'Tech Solutions Inc.',
-      status: 'danger', 
-      lastUpdated: '2023-05-05',
-      issues: 3,
-      warnings: 1,
-      value: 'N/A',
-      dueDate: '2023-05-30',
-    },
-    { 
-      id: 4, 
-      name: 'Property Sale Agreement', 
-      client: 'Michael Brown',
-      status: 'good', 
-      lastUpdated: '2023-05-02',
-      issues: 0,
-      warnings: 0,
-      value: '$350,000',
-      dueDate: '2023-07-15',
-    },
-    { 
-      id: 5, 
-      name: 'Partnership Terms - Williams Co', 
-      client: 'Sarah Williams',
-      status: 'warning', 
-      lastUpdated: '2023-04-28',
-      issues: 0,
-      warnings: 1,
-      value: '$25,000',
-      dueDate: '2023-06-01',
-    },
-  ];
+  // Mock data - in production, this would come from APIs
+  const [clients] = useState<Client[]>([
+    { id: '1', name: 'John Smith' },
+    { id: '2', name: 'Lisa Johnson' },
+    { id: '3', name: 'Michael Brown' },
+  ]);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'good':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'warning':
-        return <AlertCircle className="h-4 w-4 text-amber-500" />;
-      case 'danger':
-        return <XCircle className="h-4 w-4 text-destructive" />;
-      default:
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+  const [contracts, setContracts] = useState<Contract[]>([
+    { 
+      id: '1', 
+      title: 'Service Agreement - Smith', 
+      clientId: '1',
+      clientName: 'John Smith',
+      jurisdiction: 'United States',
+      status: 'Signed',
+      description: 'Legal services retainer agreement for ongoing business consultation.',
+      fileName: 'service-agreement-smith.pdf',
+      uploadedDate: '2023-05-12',
+    },
+    { 
+      id: '2', 
+      title: 'Employment Contract - Johnson', 
+      clientId: '2',
+      clientName: 'Lisa Johnson',
+      jurisdiction: 'Canada',
+      status: 'Draft',
+      description: 'Executive employment contract with non-compete clauses.',
+      fileName: 'employment-contract-johnson.pdf',
+      uploadedDate: '2023-05-10',
+    },
+    { 
+      id: '3', 
+      title: 'Property Purchase Agreement', 
+      clientId: '3',
+      clientName: 'Michael Brown',
+      jurisdiction: 'United Kingdom',
+      status: 'Flagged',
+      description: 'Commercial property acquisition with title issues requiring resolution.',
+      fileName: 'property-purchase-agreement.pdf',
+      uploadedDate: '2023-05-05',
+    },
+  ]);
+
+  const handleAddContract = () => {
+    setEditingContract(undefined);
+    setIsFormOpen(true);
+  };
+
+  const handleEditContract = (contract: Contract) => {
+    setEditingContract(contract);
+    setIsFormOpen(true);
+  };
+
+  const handleDeleteContract = (contractId: string) => {
+    setContractToDelete(contractId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handlePreviewContract = (contractId: string) => {
+    // In production, this would open the PDF file
+    const contract = contracts.find(c => c.id === contractId);
+    if (contract?.fileName) {
+      console.log(`Opening contract: ${contract.fileName}`);
+      // window.open(`/api/contracts/${contractId}/file`, '_blank');
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'good':
-        return (
-          <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800">
-            Good to sign
-          </Badge>
-        );
-      case 'warning':
-        return (
-          <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800">
-            Needs attention
-          </Badge>
-        );
-      case 'danger':
-        return <Badge variant="destructive">Red flag</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
+  const confirmDelete = () => {
+    if (contractToDelete) {
+      // In production, make API call to delete contract and file
+      // await fetch(`/api/contracts/${contractToDelete}`, { method: 'DELETE' });
+      setContracts(prev => prev.filter(contract => contract.id !== contractToDelete));
+      setContractToDelete(null);
+      setDeleteDialogOpen(false);
     }
   };
+
+  const handleSubmitContract = (contractData: Contract, file?: File) => {
+    if (editingContract) {
+      // Update existing contract
+      setContracts(prev => prev.map(contract => 
+        contract.id === editingContract.id ? { 
+          ...contractData, 
+          id: editingContract.id,
+          clientName: clients.find(c => c.id === contractData.clientId)?.name || '',
+          uploadedDate: editingContract.uploadedDate,
+          fileName: editingContract.fileName
+        } : contract
+      ));
+    } else {
+      // Add new contract
+      const newContract = {
+        ...contractData,
+        id: Date.now().toString(), // In production, this would be generated by the backend
+        clientName: clients.find(c => c.id === contractData.clientId)?.name || '',
+        uploadedDate: new Date().toISOString().split('T')[0],
+        fileName: file?.name || undefined,
+      };
+      setContracts(prev => [...prev, newContract]);
+      
+      // In production, upload the file here
+      if (file) {
+        console.log('Uploading file:', file.name);
+        // const formData = new FormData();
+        // formData.append('contract', file);
+        // await fetch('/api/contracts/upload', { method: 'POST', body: formData });
+      }
+    }
+  };
+
+  const getStatusCounts = () => {
+    return {
+      draft: contracts.filter(c => c.status === 'Draft').length,
+      signed: contracts.filter(c => c.status === 'Signed').length,
+      flagged: contracts.filter(c => c.status === 'Flagged').length,
+    };
+  };
+
+  const statusCounts = getStatusCounts();
 
   return (
     <DashboardLayout 
@@ -171,112 +227,89 @@ const Contracts: React.FC = () => {
               Monitor and manage your legal contracts
             </p>
           </div>
-          <button 
-            onClick={() => navigate('/dashboard/contracts/new')}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
+          <Button onClick={handleAddContract}>
             New Contract
-          </button>
+          </Button>
         </div>
 
-        <div className="grid gap-4 grid-cols-1">
+        <div className="grid gap-4 md:grid-cols-3">
           <Card>
-            <CardHeader>
-              <CardTitle>Contract Health Status</CardTitle>
-              <CardDescription>Overview of all your contracts and their current status</CardDescription>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Draft Contracts</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="px-4 py-3 text-left">Name</th>
-                      <th className="px-4 py-3 text-left">Client</th>
-                      <th className="px-4 py-3 text-left">Value</th>
-                      <th className="px-4 py-3 text-left">Due Date</th>
-                      <th className="px-4 py-3 text-left">Last Updated</th>
-                      <th className="px-4 py-3 text-left">Status</th>
-                      <th className="px-4 py-3 text-left">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockContracts.map((contract) => (
-                      <tr key={contract.id} className="border-b hover:bg-muted/50">
-                        <td className="px-4 py-3 font-medium">{contract.name}</td>
-                        <td className="px-4 py-3">{contract.client}</td>
-                        <td className="px-4 py-3">{contract.value}</td>
-                        <td className="px-4 py-3">{new Date(contract.dueDate).toLocaleDateString()}</td>
-                        <td className="px-4 py-3">{new Date(contract.lastUpdated).toLocaleDateString()}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(contract.status)}
-                            {getStatusBadge(contract.status)}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <button 
-                            onClick={() => navigate(`/dashboard/contracts/${contract.id}`)}
-                            className="text-sm text-primary hover:underline mr-3"
-                          >
-                            View
-                          </button>
-                          <button 
-                            onClick={() => navigate(`/dashboard/contracts/${contract.id}/edit`)}
-                            className="text-sm text-primary hover:underline"
-                          >
-                            Edit
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <div className="text-2xl font-bold">{statusCounts.draft}</div>
+              <p className="text-xs text-muted-foreground">
+                Pending signature
+              </p>
             </CardContent>
           </Card>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Good to Sign</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {mockContracts.filter(c => c.status === 'good').length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  No issues detected
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Needs Attention</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {mockContracts.filter(c => c.status === 'warning').length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Minor issues detected
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Red Flags</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-destructive">
-                  {mockContracts.filter(c => c.status === 'danger').length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Serious issues detected
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Signed Contracts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{statusCounts.signed}</div>
+              <p className="text-xs text-muted-foreground">
+                Active agreements
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Flagged Contracts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-destructive">{statusCounts.flagged}</div>
+              <p className="text-xs text-muted-foreground">
+                Requiring attention
+              </p>
+            </CardContent>
+          </Card>
         </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {contracts.map((contract) => (
+            <ContractCard
+              key={contract.id}
+              contract={contract}
+              onEdit={handleEditContract}
+              onDelete={handleDeleteContract}
+              onPreview={handlePreviewContract}
+            />
+          ))}
+        </div>
+
+        {contracts.length === 0 && (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">No contracts yet. Add your first contract to get started.</p>
+            </CardContent>
+          </Card>
+        )}
+        
+        <ContractForm
+          open={isFormOpen}
+          onOpenChange={setIsFormOpen}
+          contract={editingContract}
+          clients={clients}
+          onSubmit={handleSubmitContract}
+        />
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Contract</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this contract? This action cannot be undone and will remove both the contract record and the uploaded file.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
